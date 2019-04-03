@@ -20,7 +20,7 @@
   background-color: #1a1b1e;
   color: #e1e4ea;
 }
-#user-list{
+#right-panel{
   width: 17%;
   position: absolute;
   right: 2.5%;
@@ -31,6 +31,13 @@
   color: white;
   border-radius: 3%;
   padding: 5px;
+}
+#user-list{
+  height:50%;
+  border-bottom: solid 1px black;
+}
+#room-list{
+  height: 50%;
 }
 #message-window{
   margin: auto;
@@ -57,4 +64,9 @@
 }
 .message-item{
   max-width: 95%;
+}
+
+.clickedItem{
+  background-color: #afb3bc;
+  color: black;
 }

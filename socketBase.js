@@ -2,6 +2,7 @@ const uuid = require('uuid');
 let guestNum = 1;
 let currentUsers = {};
 let currentNames = [];
+let rooms = {};
 
 module.exports = function(io){
   io.on('connection', function(socket){
@@ -9,6 +10,23 @@ module.exports = function(io){
 
     guestNum = assignName(socket, guestNum, currentUsers, currentNames);
 
+    socket.on('private', function(obj){
+      let id = null;
+      for (var user in currentUsers){
+        if(currentUsers[user].name===obj.recipient){
+          id = user;
+          break;
+        }
+      }
+      if(id){
+        let message = obj.name + ': ' + obj.msg;
+        io.to(id).emit('private', message);
+        io.to(socket.id).emit('private', message);
+      }
+      else{
+        io.to(socket.id).emit('private', 'Private message failed');
+      }
+    });
 
     socket.on('change_name', function(newName){
       let result = {};

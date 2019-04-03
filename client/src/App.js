@@ -28,7 +28,8 @@ class App extends Component {
       collapse: false,
       dropdownOpen: false,
       modal: false,
-      nameSuccess: true
+      nameSuccess: true,
+      activeName: null
 
     };
     this.handleSend = this.handleSend.bind(this);
@@ -39,6 +40,7 @@ class App extends Component {
     this.handleNameChange = this.handleNameChange.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
     this.setName = this.setName.bind(this);
+    this.selectName = this.selectName.bind(this);
   }
   componentWillUpdate(){
     var elem = document.getElementById('message-window');
@@ -93,6 +95,10 @@ class App extends Component {
       console.log("These are my local users: ", current.state.localUsers);
     });
 
+    socket.on('private', function(msg){
+      current.setState({messages: [...current.state.messages, msg]});
+    });
+
   }
   setName(name) {
     let current = this;
@@ -115,8 +121,15 @@ class App extends Component {
   handleSend(event) {
     event.preventDefault();
     //socket.emit('chat', this.state.input);
+
+    if(!this.state.activeName){
+      socket.emit(this.state.name, this.state.input);
+    }
+    else{
+      socket.emit('private', {msg: this.state.input, recipient: this.state.activeName,
+        name: this.state.name});
+    }
     this.setState({input: ''});
-    socket.emit(this.state.name, this.state.input);
 
   }
   toggle() {
@@ -140,6 +153,15 @@ class App extends Component {
   onDismiss() {
     this.setState({ nameSuccess: true });
   }
+  selectName(name){
+    console.log('in select name, name is ', name);
+    this.setState( ({activeName}) => {
+      if(activeName===name){
+        return {activeName: null};
+      }
+      return {activeName: name};
+    });
+  }
 render() {
   let current = this;
   if ("geolocation" in navigator){
@@ -159,7 +181,8 @@ render() {
 
     let nameList = this.state.localUsers.map((x, index) => {
       return (
-        <div id="name-item" key={index}> {x} </div>
+        <ListClickable isActive={this.state.activeName==x} id={index} key={index}
+          item={x} handleClick={this.selectName} />
       );
     });
 
@@ -212,8 +235,12 @@ render() {
           <div id="message-window">
             {messageList}
           </div>
-          <div id="user-list">
-            {nameList}
+          <div id='right-panel'>
+            <div id='user-list'>
+              {nameList}
+            </div>
+            <div id='room-list'>
+            </div>
           </div>
           <Form>
             <InputGroup id='textInput'>
@@ -226,6 +253,21 @@ render() {
         </div>
 
       </div>
+    );
+  }
+}
+
+class ListClickable extends Component{
+
+  handleClick(event){
+    this.props.handleClick(event.target.id);
+  }
+
+  render(){
+
+    return (
+      <div onClick={e => this.handleClick(e)} id={this.props.item}
+        className={this.props.isActive ? 'clickedItem' : ''}>{this.props.item}</div>
     );
   }
 }
