@@ -19,15 +19,27 @@ module.exports = function(io){
         }
       }
       if(id){
-        let message = obj.name + ': ' + obj.msg;
-        io.to(id).emit('private', message);
-        io.to(socket.id).emit('private', message);
+
+        io.to(id).emit('private', {name: obj.name, msg: obj.msg});
+        io.to(socket.id).emit('private', {name: obj.name, msg: obj.msg});
       }
       else{
         io.to(socket.id).emit('private', 'Private message failed');
       }
     });
-
+    socket.on('room_creation', function(obj){
+      let currentRooms = Object.keys(rooms);
+      if (!currentRooms.includes(obj.name)){
+        rooms[obj.name] = {location: obj.location, names: []};
+        currentRooms.push(obj.name);
+        console.log('here are current rooms', currentRooms);
+        io.emit('room_update', currentRooms);
+        console.log(rooms);
+      }
+      else{
+        socket.emit('room_failure');
+      }
+    });
     socket.on('change_name', function(newName){
       let result = {};
       let oldName = currentUsers[socket.id].name;
@@ -57,9 +69,31 @@ module.exports = function(io){
       io.emit('chat', message);
     });*/
 
+    socket.on('join_room', function(obj){
+      if(Object.keys(rooms).includes(obj.room)){
+        console.log('the name exists');
+        rooms[obj.room].names.push(obj.name);
+        console.log('current names changed to ', currentNames);
+        socket.join(obj.room);
+        currentUsers[socket.id].inRoom = true;
+        io.sockets.in(obj.name).emit('test', "is this room thing working?");
+      }
+    });
+    socket.on('leave_room', function(obj){
+      rooms[obj.room].names = rooms[obj.room].names.filter(x=>x !== obj.name);
+      socket.leave(obj.room);
+      currentUsers[socket.id].inRoom = false;
+    });
+    socket.on('room_chat', function(obj){
+      
+      console.log(obj.room);
+      io.sockets.in(obj.room).emit('room_chat', {msg: obj.msg, name: currentUsers[socket.id].name});
+
+    });
     socket.on('location_update', function(clientUser){
 
       currentUsers[clientUser.id].location = clientUser.location;
+      let name = currentUsers[clientUser.id].name;
       let localNames = [];
       let lat1 = clientUser.location.latitude;
       let lon1 = clientUser.location.longitude;
@@ -67,13 +101,25 @@ module.exports = function(io){
 
         let lat2 = currentUsers[user].location.latitude;
         let lon2 = currentUsers[user].location.longitude;
-        if(distance(lat1, lon1, lat2, lon2) <= 1){
+        if(distance(lat1, lon1, lat2, lon2) <= 1 && !currentUsers[user].inRoom){
           localNames.push(currentUsers[user].name);
         }
       }
-      console.log('Current Users: ', currentUsers);
-      console.log('Current Names: ', currentNames);
-      socket.emit('locals', localNames);
+      let localRooms = [];
+      for (var room in rooms){
+        let lat2 = rooms[room].location.latitude;
+        let lon2 = rooms[room].location.longitude;
+        if(distance(lat1, lon1, lat2, lon2) <= 1){
+          localRooms.push(room);
+        }
+      }
+      let roomMembers = [];
+      if(clientUser.room){
+        roomMembers = rooms[room].names;
+      }
+      console.log('local names is now ', localNames);
+      console.log('currentNames is now ', currentNames);
+      socket.emit('locals', {names: localNames, rooms: localRooms, roomNames: roomMembers});
     });
     socket.on('disconnect', function(){
       console.log('DISCONNECTED!');
@@ -89,7 +135,8 @@ module.exports = function(io){
     let userObj = {
       id: userId,
       name: "Guest" + num,
-      location: {latitude: 0, longitude: 0}
+      location: {latitude: 0, longitude: 0},
+      inRoom: false
     };
     names.push(userObj.name);
     let userInfo = {userId: userObj};
@@ -110,8 +157,7 @@ module.exports = function(io){
   function createUserListeners(socket, names){
     names.forEach(name => {
       socket.on(name, function(msg){
-        let message = name + ': ' + msg;
-        io.emit(name, message);
+        io.emit(name, {msg: msg, name: name});
       });
     });
     console.log('Server events: ', socket.eventNames());

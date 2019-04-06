@@ -33,10 +33,16 @@
   padding: 5px;
 }
 #user-list{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   height:50%;
   border-bottom: solid 1px black;
 }
 #room-list{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   height: 50%;
 }
 #message-window{
@@ -69,4 +75,18 @@
 .clickedItem{
   background-color: #afb3bc;
   color: black;
+}
+.nameStyle{
+  font-weight: bold;
+  color: #d8e5ff;
+}
+.privateStyle{
+  font-weight: bold;
+  color: #5ee539
+}
+.headings{
+  font-weight: bold;
+  color: #d8e5ff;
+  align-self: center;
+
 }
