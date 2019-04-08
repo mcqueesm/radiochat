@@ -75,17 +75,17 @@ module.exports = function(io){
         rooms[obj.room].names.push(obj.name);
         console.log('current names changed to ', currentNames);
         socket.join(obj.room);
-        currentUsers[socket.id].inRoom = true;
+        currentUsers[socket.id].inRoom = obj.room;
         io.sockets.in(obj.name).emit('test', "is this room thing working?");
       }
     });
     socket.on('leave_room', function(obj){
       rooms[obj.room].names = rooms[obj.room].names.filter(x=>x !== obj.name);
       socket.leave(obj.room);
-      currentUsers[socket.id].inRoom = false;
+      currentUsers[socket.id].inRoom = null;
     });
     socket.on('room_chat', function(obj){
-      
+
       console.log(obj.room);
       io.sockets.in(obj.room).emit('room_chat', {msg: obj.msg, name: currentUsers[socket.id].name});
 
@@ -93,6 +93,7 @@ module.exports = function(io){
     socket.on('location_update', function(clientUser){
 
       currentUsers[clientUser.id].location = clientUser.location;
+      currentUsers[clientUser.id].radius = clientUser.radius;
       let name = currentUsers[clientUser.id].name;
       let localNames = [];
       let lat1 = clientUser.location.latitude;
@@ -101,15 +102,27 @@ module.exports = function(io){
 
         let lat2 = currentUsers[user].location.latitude;
         let lon2 = currentUsers[user].location.longitude;
-        if(distance(lat1, lon1, lat2, lon2) <= 1 && !currentUsers[user].inRoom){
+        let dist = distance(lat1, lon1, lat2, lon2);
+        if(dist <= clientUser.radius && dist <= currentUsers[user].radius && !currentUsers[user].inRoom){
           localNames.push(currentUsers[user].name);
+        }
+        if(currentUsers[socket.id].inRoom){
+          let roomName = currentUsers[socket.id].inRoom;
+          let roomLat = rooms[roomName].location.latitude;
+          let roomLon = rooms[roomName].location.longitude;
+          if(distance(lat1, lon1, roomLat, roomLon) > clientUser.radius){
+            socket.leave(roomName);
+            socket.emit('force_leave');
+            rooms[roomName].names = rooms[roomName].names.filter(x=>x !== name);
+            currentUsers[socket.id].inRoom = null;
+          }
         }
       }
       let localRooms = [];
       for (var room in rooms){
         let lat2 = rooms[room].location.latitude;
         let lon2 = rooms[room].location.longitude;
-        if(distance(lat1, lon1, lat2, lon2) <= 1){
+        if(distance(lat1, lon1, lat2, lon2) <= clientUser.radius){
           localRooms.push(room);
         }
       }
@@ -136,7 +149,8 @@ module.exports = function(io){
       id: userId,
       name: "Guest" + num,
       location: {latitude: 0, longitude: 0},
-      inRoom: false
+      radius: 1,
+      inRoom: null
     };
     names.push(userObj.name);
     let userInfo = {userId: userObj};

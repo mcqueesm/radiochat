@@ -1,38 +1,58 @@
 import React, { Component } from 'react';
 
 import './App.css';
+//Bootstrap used by Reactstrap
 import 'bootstrap/dist/css/bootstrap.min.css';
+//Reactstrap components
 import {Alert, Button, InputGroup, InputGroupText, InputGroupAddon,
     Collapse, CardBody, Card, Input, Form, Navbar,
     NavbarToggler, NavbarBrand, Nav, NavItem, NavLink,
     Dropdown, DropdownMenu, DropdownToggle, Modal, ModalHeader,
     ModalBody, ModalFooter} from 'reactstrap';
-import * as io from 'socket.io-client';
 
+//Create client side socket
+import * as io from 'socket.io-client';
 const socket = io.connect('http://localhost:5000');
 
+//Main component for RadioChat
 class App extends Component {
   constructor(props){
     super(props);
 
     this.state = {
+      //All local messages
       messages: [],
+      //All room messages (deleted upon leaving room)
       roomMessages: [],
+      //Stores message input
       input: '',
+      //Your socket.id
       id: '',
+      //Your current name
       name: '',
+      //All names connected to server
       userNames: [],
+      //List of local names based on your radius
       localUsers: [],
+      //Local rooms based on radius
       rooms: [],
+      //Names of users in current room
       roomNames: [],
+      //Stores 'change name' input
       newName:'',
+      //Your current latitude longitude
       location: {latitude: '', longitude: ''},
+      //Holds id of setInterval that periodically emits location and other info to server
       locationInterval: null,
-      collapse: false,
-      dropdownOpen: false,
+      //Chat radius
+      radius: 1,
+      //False if modal closed, true if open
       modal: false,
+      //On failure set to false, causing alert to render
       nameSuccess: true,
+      //Name of user currently clicked on (for PM)
       activeName: null,
+      //Name of current room
       activeRoom: null
 
     };
@@ -47,31 +67,41 @@ class App extends Component {
     this.selectName = this.selectName.bind(this);
     this.handleRoomCreation = this.handleRoomCreation.bind(this);
     this.selectRoom = this.selectRoom.bind(this);
+    this.setChatRadius = this.setChatRadius.bind(this);
   }
   componentWillUpdate(){
+    //Cause message window to scroll automatically for message overflow
     var elem = document.getElementById('message-window');
     elem.scrollTop = elem.scrollHeight;
   }
   componentDidMount() {
     let current = this;
-    /*socket.on('chat', function(msg){
-      current.setState({messages: [...current.state.messages, msg]});
-    });*/
+
+    /* This listener called when current chat room is no longer within client's
+    chat radius and they have left the room*/
+    socket.on('force_leave', function(){
+      current.setState({activeRoom: null});
+    });
+    //Listener for messages emitted from current room
     socket.on('room_chat', function(obj){
+      //add message to state
       let message = "<span class='nameStyle'>" + obj.name + "</span>" + ': ' +obj.msg;
       current.setState({roomMessages: [...current.state.roomMessages, message]});
     });
+    //Once connected client begins emitting location info
     socket.on('on_connection', function(userInfo){
-      console.log("Client connecting")
+      //socket id received from server
       current.setState({id: userInfo.id}, () => {
+        //emit location and set name received from server
         current.beginLocationEmit();
         current.setName(userInfo.name);
       });
     });
+    //Room name already exists
     socket.on('room_fail', function(){
       console.log('This name already exists');
     });
-
+    
     socket.on('name_update', function(names){
       current.setState({userNames: names}, () => {console.log("Received these names: ",  names)});
     });
@@ -134,7 +164,7 @@ class App extends Component {
     let current = this;
     this.setState({locationInterval: setInterval(function(){
       socket.emit('location_update', {id: current.state.id, location: current.state.location,
-      room: current.state.activeRoom});
+      room: current.state.activeRoom, radius: current.state.radius});
     }, 3000
 
     )});
@@ -210,6 +240,10 @@ class App extends Component {
   handleRoomCreation(name){
     socket.emit('room_creation', {name: name, location: this.state.location});
   }
+  setChatRadius(rad){
+    this.setState({radius: rad});
+    console.log(rad);
+  }
 
 render() {
   let current = this;
@@ -234,30 +268,30 @@ render() {
     });
     let nameList = this.state.localUsers.map((x, index) => {
       return (
-        <ListClickable isActive={this.state.activeName==x} id={index} key={index}
-          item={x} handleClick={this.selectName} />
+        <div className='clickable'><ListClickable isActive={this.state.activeName==x} id={index} key={index}
+          item={x} handleClick={this.selectName} /></div>
       );
     });
     let roomNameList = this.state.roomNames.map((x, index) => {
       return (
-        <ListClickable isActive={this.state.activeName==x} id={index} key={index}
-          item={x} handleClick={this.selectName} />
+        <div className='clickable'><ListClickable isActive={this.state.activeName==x} id={index} key={index}
+          item={x} handleClick={this.selectName} className='clickable'/></div>
       );
     });
 
     let roomList = this.state.rooms.map((x, index)=>{
       return (
         <ListClickable isActive={this.state.activeRoom==x} id={index} key={index}
-        item={x} handleClick={this.selectRoom} />
+        item={x} handleClick={this.selectRoom} className='clickable' />
       );
     });
     return (
       <div id="container">
-      <div>
-      <Navbar color="faded" light>
-        <NavbarBrand href="/" className="mr-auto">RadioChat</NavbarBrand>
-        <NavbarToggler onClick={this.toggleNavbar} className="mr-2" />
-        <Collapse isOpen={this.state.collapsed} navbar>
+      <div className='navigation' >
+      <Navbar color="faded" light >
+        <NavbarBrand className="mr-auto">RadioChat</NavbarBrand>
+          <Nav>
+          <NavItem className='nav-items'>
           <div onClick={this.modalToggle}>Change Name</div>
           <Modal isOpen={this.state.modal} toggle={this.modalToggle} className={this.props.className}>
             <ModalHeader toggle={this.modalToggle}>Enter new name:</ModalHeader>
@@ -272,8 +306,15 @@ render() {
               </Form>
             </ModalBody>
           </Modal>
-          <ModalItem title='Enter room name:' handleClick={this.handleRoomCreation}/>
-        </Collapse>
+          </NavItem>
+          <NavItem className='nav-items'>
+          <ModalItem  btnText='Create Room' title='Enter room name:' handleClick={this.handleRoomCreation}/>
+          </NavItem>
+          <NavItem className='nav-items'>
+          <ModalItem btnText='Chat Radius' title='Set chat radius (miles): ' isRange={true}
+            setChatRadius={this.setChatRadius}/>
+          </NavItem>
+          </Nav>
       </Navbar>
     </div>
     {!this.state.nameSuccess ? (
@@ -314,15 +355,22 @@ class ModalItem extends Component{
 
     this.state={
       modal: false,
-      roomName: ''
+      roomName: '',
+      radius: 1
     };
     this.modalToggle = this.modalToggle.bind(this);
     this.handleClick = this.handleClick.bind(this);
+    this.handleChange = this.handleChange.bind(this);
   }
   handleClick(event){
     event.preventDefault();
     this.props.handleClick(this.state.roomName);
     this.setState({roomName: ''});
+  }
+  handleChange(event){
+    this.setState({radius: event.target.value}, ()=>{
+      this.props.setChatRadius(this.state.radius);
+    });
   }
   modalToggle() {
     this.setState({modal: !this.state.modal});
@@ -330,16 +378,21 @@ class ModalItem extends Component{
   render(){
     return(
       <div>
-      <div onClick={this.modalToggle}>Create Room</div>
+      <div onClick={this.modalToggle}>{this.props.btnText}</div>
       <Modal isOpen={this.state.modal} toggle={this.modalToggle} className={this.props.className}>
-        <ModalHeader toggle={this.modalToggle}>{this.props.title}</ModalHeader>
+        <ModalHeader toggle={this.modalToggle}>{this.props.title}
+          {this.props.isRange ? this.state.radius : ''}</ModalHeader>
         <ModalBody>
           <Form>
             <InputGroup id='roomInput'>
-              <Input value={this.state.roomName} onChange={e=>this.setState({roomName: e.target.value})}/>
-              <InputGroupAddon addonType="append"><Button type='submit' onClick={this.handleClick}
+              {this.props.isRange ? <div className='rangeDiv' ><label>0.1</label>
+              <input className='rangeInput' type='range' min='0.1' max='1' step='0.1'
+                onChange={e=>this.handleChange(e)} value={this.state.radius}/>
+              <label>1.0</label></div>:
+              <Input value={this.state.roomName} onChange={e=>this.setState({roomName: e.target.value})}/>}
+              {this.props.isRange ? '' : <InputGroupAddon addonType="append"><Button type='submit' onClick={this.handleClick}
                 color="secondary">Submit</Button>
-              </InputGroupAddon>
+              </InputGroupAddon> }
             </InputGroup>
           </Form>
         </ModalBody>

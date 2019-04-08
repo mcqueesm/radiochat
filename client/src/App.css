@@ -5,16 +5,19 @@
   height: 100vh;
   background-color: #afb3bc;
 }
+.navigation{
+  height: 8%;
+}
 #message-container{
   position: relative;
   display: flex;
   justify-content: space-between;
   margin: auto;
-  margin-top: 5px;
-  width: 85%;
-  height: 85%;
+
+  width: 100%;
+  height: 92%;
   border: 1px solid black;
-  border-radius: 5%;
+
   padding: 20px 20px;
   box-shadow: 1em 0.5em 1em grey;
   background-color: #1a1b1e;
@@ -23,13 +26,13 @@
 #right-panel{
   width: 17%;
   position: absolute;
-  right: 2.5%;
-  top: 5%;
-  height: 85%;
+  right: 1%;
+  top: 2%;
+  height: 88%;
   border: 1px solid black;
   background-color: #404247;
   color: white;
-  border-radius: 3%;
+
   padding: 5px;
 }
 #user-list{
@@ -48,15 +51,15 @@
 #message-window{
   margin: auto;
   position: absolute;
-  top: 5%;
-  width: 75%;
-  height: 85%;
+  top: 2%;
+  width: 80%;
+  height: 88%;
   overflow-y: scroll;
   background-color: #404247;
   color: white;
-  left: 2.5%;
+  left: 1%;
   padding: 10px;
-  border-radius: 3%;
+
 }
 #textInput{
   position: absolute;
@@ -89,4 +92,22 @@
   color: #d8e5ff;
   align-self: center;
 
+}
+.nav-items{
+  margin-left: 20px;
+  margin-right: 20px;
+  cursor: pointer;
+}
+.clickable{
+  cursor: pointer;
+}
+.rangeDiv{
+  width: 100%;
+  margin: auto;
+}
+.rangeInput{
+  width: 75%;
+}
+label{
+  margin: 10px;
 }
