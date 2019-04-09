@@ -72,7 +72,8 @@
   color: white;
 }
 .message-item{
-  max-width: 95%;
+  width: 100%;
+  
 }
 
 .clickedItem{
@@ -110,4 +111,10 @@
 }
 label{
   margin: 10px;
+}
+.warning{
+  color: #f7314b;
+  font-weight: bold;
+  background-color: #afb3bc;
+  width: 100%;
 }

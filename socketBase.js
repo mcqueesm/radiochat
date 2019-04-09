@@ -44,18 +44,21 @@ module.exports = function(io){
       let result = {};
       let oldName = currentUsers[socket.id].name;
       if (currentNames.includes(newName)){
-        result = {success: false};
+        result = {success: false, name: null};
+        let message = newName + ' is already taken';
+        socket.emit('server_message', {type: 'warning', message: message})
       }
       else{
 
         changeName(socket, newName, currentUsers, currentNames);
         result = {success: true, name: newName};
         createUserListeners(socket, [newName]);
+        socket.off(oldName, handleChat);
 
       }
 
       socket.emit('change_name_result', result);
-      io.emit('name_update', currentNames);
+
       //io.emit('chat', oldName + ' has changed name to ' + newName);
 
     });
@@ -160,6 +163,7 @@ module.exports = function(io){
   }
   function handleDisconnect(socket, users, names){
     let index = names.indexOf(users[socket.id].name);
+    socket.off(users[socket.id].name, handleChat);
     delete names[index];
     delete users[socket.id];
   }
@@ -170,11 +174,13 @@ module.exports = function(io){
   }
   function createUserListeners(socket, names){
     names.forEach(name => {
-      socket.on(name, function(msg){
-        io.emit(name, {msg: msg, name: name});
-      });
+      socket.on(name, handleChat );
     });
     console.log('Server events: ', socket.eventNames());
+  }
+  function handleChat(obj){
+    console.log('in server handleChat, message is: ', obj.msg);
+    io.emit(obj.name, {msg: obj.msg, name: obj.name});
   }
   function distance(lat1, lon1, lat2, lon2, unit) {
         var radlat1 = Math.PI * lat1/180;

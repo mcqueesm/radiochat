@@ -8,7 +8,7 @@ import {Alert, Button, InputGroup, InputGroupText, InputGroupAddon,
     Collapse, CardBody, Card, Input, Form, Navbar,
     NavbarToggler, NavbarBrand, Nav, NavItem, NavLink,
     Dropdown, DropdownMenu, DropdownToggle, Modal, ModalHeader,
-    ModalBody, ModalFooter} from 'reactstrap';
+    ModalBody, ModalFooter, Fade} from 'reactstrap';
 
 //Create client side socket
 import * as io from 'socket.io-client';
@@ -30,8 +30,6 @@ class App extends Component {
       id: '',
       //Your current name
       name: '',
-      //All names connected to server
-      userNames: [],
       //List of local names based on your radius
       localUsers: [],
       //Local rooms based on radius
@@ -53,13 +51,14 @@ class App extends Component {
       //Name of user currently clicked on (for PM)
       activeName: null,
       //Name of current room
-      activeRoom: null
+      activeRoom: null,
+      //Controls fade in of alerts
+      fadeIn: false
 
     };
+    //bind 'this' to component functions
     this.handleSend = this.handleSend.bind(this);
     this.beginLocationEmit = this.beginLocationEmit.bind(this);
-    this.toggleNavbar = this.toggleNavbar.bind(this);
-    this.toggle = this.toggle.bind(this);
     this.modalToggle = this.modalToggle.bind(this);
     this.handleNameChange = this.handleNameChange.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
@@ -68,6 +67,13 @@ class App extends Component {
     this.handleRoomCreation = this.handleRoomCreation.bind(this);
     this.selectRoom = this.selectRoom.bind(this);
     this.setChatRadius = this.setChatRadius.bind(this);
+    this.toggleFade = this.toggleFade.bind(this);
+    this.addMessage = this.addMessage.bind(this);
+    this.addRoomMessage = this.addRoomMessage.bind(this);
+    this.addServerMessage = this.addServerMessage.bind(this);
+    this.handleNameChangeResult = this.handleNameChangeResult.bind(this);
+    this.updateLocationBasedInfo = this.updateLocationBasedInfo.bind(this);
+    this.addPrivateMessage = this.addPrivateMessage.bind(this);
   }
   componentWillUpdate(){
     //Cause message window to scroll automatically for message overflow
@@ -83,17 +89,13 @@ class App extends Component {
       current.setState({activeRoom: null});
     });
     //Listener for messages emitted from current room
-    socket.on('room_chat', function(obj){
-      //add message to state
-      let message = "<span class='nameStyle'>" + obj.name + "</span>" + ': ' +obj.msg;
-      current.setState({roomMessages: [...current.state.roomMessages, message]});
-    });
+    socket.on('room_chat', this.addRoomMessage);
     //Once connected client begins emitting location info
     socket.on('on_connection', function(userInfo){
       //socket id received from server
       current.setState({id: userInfo.id}, () => {
         //emit location and set name received from server
-        current.beginLocationEmit();
+        current.beginLocationEmit(3000);
         current.setName(userInfo.name);
       });
     });
@@ -101,105 +103,113 @@ class App extends Component {
     socket.on('room_fail', function(){
       console.log('This name already exists');
     });
-    
-    socket.on('name_update', function(names){
-      current.setState({userNames: names}, () => {console.log("Received these names: ",  names)});
-    });
-
-    socket.on('change_name_result', function(result){
-
-      if (!result.success){
-        current.setState({nameSuccess: result.success}, ()=>{console.log(current.state.nameSuccess)});
-      }
-      else{
-        current.setState({name: result.name}, () => {console.log("My name changed to ", current.state.name)});
-      }
-    });
-
-    socket.on('locals', function(obj){
-      current.setState({rooms: obj.rooms, roomNames: obj.roomNames});
-      let noLonger = current.state.localUsers.filter(x => !obj.names.includes(x));
-      let newUsers = obj.names.filter(x => !current.state.localUsers.includes(x));
-      console.log('No longer: ', noLonger);
-      console.log('New users: ', newUsers);
-      current.setState({localUsers: obj.names});
-      if (noLonger){
-        noLonger.forEach(x => {
-          socket.off(x);
-        });
-      if (newUsers){
-        newUsers.forEach(x => {
-          socket.on(x, function(obj){
-            let message = "<span class='nameStyle'>" + obj.name + "</span>" + ': ' +obj.msg;
-            current.setState({messages: [...current.state.messages, message]});
-          });
-        });
-      }
-      }
-      console.log("These are my local users: ", current.state.localUsers);
-      console.log("These are my local rooms: ", current.state.rooms);
-    });
-
-    socket.on('private', function(obj){
-      let message = "<span class='privateStyle'>" + obj.name + "</span>" + ': ' +obj.msg;
-      current.setState(
-        {messages: [...current.state.messages, message],
-        roomMessages: [...current.state.roomMessages, message]
-      }
-      );
-    });
+    //Receive general messages from server
+    socket.on('server_message', this.addServerMessage);
+    //If name change successful, updates name, else handles failure
+    socket.on('change_name_result', this.handleNameChangeResult);
+    //Listens for location related updates from server
+    socket.on('locals', this.updateLocationBasedInfo);
+    //Listens for private messages from server
+    socket.on('private', this.addPrivateMessage);
 
   }
+  /*Add private message to state.messages and state.roomMessages
+  Obj Keys:
+  msg - message sent from user
+  name - name of sender*/
+  addPrivateMessage(obj){
+    //add css class 'privateSyle' to message
+    let message = "<span class='privateStyle'>" + obj.name + "</span>" + ': ' +obj.msg;
+    this.setState({
+      messages: [...this.state.messages, message],
+      roomMessages: [...this.state.roomMessages, message]
+    });
+  }
+  /*Add server message to state.messages and state.roomMessages
+  Obj Keys:
+  msg - message sent from server
+  type - type of message (determines css)*/
+  addServerMessage(obj){
+    let message = "<div class='" + obj.type + "'>" + obj.message + "</div>";
+    this.setState({messages: [...this.state.messages, message],
+      roomMessages: [...this.state.roomMessages, message]});
+  }
+  /*Add user message to state.roomMessages
+  Obj Keys:
+  msg - message sent from server
+  name - name of sender*/
+  addRoomMessage(obj){
+    let message = "<span class='nameStyle'>" + obj.name + "</span>" + ': ' +obj.msg;
+    this.setState({roomMessages: [...this.state.roomMessages, message]});
+  }
+  /*Add user message to state.messages
+  Obj Keys:
+  msg - message sent from server
+  name - name of sender*/
+  addMessage(obj){
+    console.log('in client addMessage, message is: ', obj.msg)
+    let message = "<span class='nameStyle'>" + obj.name + "</span>" + ': ' +obj.msg;
+    this.setState({messages: [...this.state.messages, message]});
+  }
+  //Set state.name to name
   setName(name) {
-    let current = this;
-    current.setState({name: name}) /*, () =>{
-      socket.on(name, function(msg){
-        current.setState({messages: [...current.state.messages, msg]});
-      });
-    })*/
-
+    this.setState({name: name});
   }
-
-  beginLocationEmit() {
+  //Sends latitude/longitude of device to server every 'interval' milliseconds
+  beginLocationEmit(interval) {
     let current = this;
+    //Save setInterval id in state as 'locationInterval'
     this.setState({locationInterval: setInterval(function(){
+      //Send client id, location, activeRoom and chat radius to server
       socket.emit('location_update', {id: current.state.id, location: current.state.location,
       room: current.state.activeRoom, radius: current.state.radius});
-    }, 3000
-
+    }, interval
     )});
   }
+  /*Handles response from server upon name change request
+  Obj Keys:
+  success - true if name successfully changed, false otherwise
+  name - new name (null on failure)*/
+  handleNameChangeResult(result){
+    //Upon failure trigger nameSuccess and toggleFade for alert
+    if (!result.success){
+      this.setState({nameSuccess: result.success});
+      this.toggleFade();
+      //Fade out alert after 3 seconds
+      let intervalID1 = setInterval(()=>{
+        this.toggleFade();
+        clearInterval(intervalID1);
+      }, 3000);
+      //Remove alert after 4 seconds
+      let intervalID2 = setInterval(()=>{
+        this.setState({nameSuccess: true});
+        clearInterval(intervalID2);
+      }, 4000);
+    }
+    //Set name upon success
+    else{
+      this.setName(result.name);
+    }
+  }
+  //Handles messages sent by client
   handleSend(event) {
-    console.log('activeName: ', this.state.activeName);
-    console.log('activeRoom: ', this.state.activeRoom);
     event.preventDefault();
-    //socket.emit('chat', this.state.input);
+    //Send private message if user is selected from guest list
     if(this.state.activeName){
-      console.log('in first if');
       socket.emit('private', {msg: this.state.input, recipient: this.state.activeName,
         name: this.state.name});
     }
+    //Else if user is in a room, send to the room
     else if(this.state.activeRoom){
-      console.log('in second if');
       socket.emit('room_chat', {msg: this.state.input, room:this.state.activeRoom});
     }
+    //If none of the above, emit message to own id
     else if(!this.state.activeName){
-      console.log('in third if');
-      socket.emit(this.state.name, this.state.input);
+      console.log('emitting message: ', this.state.input);
+      socket.emit(this.state.name, {msg: this.state.input, name: this.state.name});
     }
-
+    //Clear input from state
     this.setState({input: ''});
-
-  }
-  toggle() {
-    this.setState({
-      dropdownOpen: !this.state.dropdownOpen
-    });
-  }
-  toggleNavbar() {
-    this.setState({
-      collapsed: !this.state.collapsed
-    });
   }
   modalToggle() {
     this.setState({modal: !this.state.modal});
@@ -223,7 +233,7 @@ class App extends Component {
   }
   selectRoom(name){
     let current = this;
-    this.setState({roomMessages: []});
+    this.setState({roomMessages: [], activeName: null});
     this.setState( ({activeRoom}) => {
       if(activeRoom){
         socket.emit('leave_room', {room: name, name: current.state.name});
@@ -244,6 +254,27 @@ class App extends Component {
     this.setState({radius: rad});
     console.log(rad);
   }
+  toggleFade() {
+    this.setState({
+        fadeIn: !this.state.fadeIn
+    });
+  }
+  updateLocationBasedInfo(obj){
+    this.setState({rooms: obj.rooms, roomNames: obj.roomNames});
+    let noLonger = this.state.localUsers.filter(x => !obj.names.includes(x));
+    let newUsers = obj.names.filter(x => !this.state.localUsers.includes(x));
+    if (noLonger){
+      noLonger.forEach(x => {
+        socket.off(x, this.addMessage);
+      });
+    }
+    if (newUsers){
+      newUsers.forEach(x => {
+        socket.on(x, this.addMessage);
+      });
+    }
+    this.setState({localUsers: obj.names});
+  }
 
 render() {
   let current = this;
@@ -263,7 +294,7 @@ render() {
     });
     let roomMessageList = this.state.roomMessages.map((x, index)=>{
       return (
-        <div className="message-Item" key={index} dangerouslySetInnerHTML={{__html: x}} />
+        <div className="message-item" key={index} dangerouslySetInnerHTML={{__html: x}} />
       );
     });
     let nameList = this.state.localUsers.map((x, index) => {
@@ -317,9 +348,10 @@ render() {
           </Nav>
       </Navbar>
     </div>
-    {!this.state.nameSuccess ? (
-      <Alert color="danger" isOpen={!this.state.nameSuccess} toggle={this.onDismiss}>That name is already in use!
-      </Alert>) : <div></div>}
+
+    {!this.state.nameSuccess ? (<Fade in={this.state.fadeIn}>
+      <Alert color="danger" >That name is already in use!
+      </Alert></Fade>) : <div></div>}
         <div id="message-container">
           <div id="message-window">
             {this.state.activeRoom ? roomMessageList : messageList}
@@ -365,7 +397,7 @@ class ModalItem extends Component{
   handleClick(event){
     event.preventDefault();
     this.props.handleClick(this.state.roomName);
-    this.setState({roomName: ''});
+    this.setState({roomName: '', modal: false});
   }
   handleChange(event){
     this.setState({radius: event.target.value}, ()=>{
