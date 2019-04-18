@@ -17,7 +17,7 @@ class Login extends Component {
   componentWillMount() {
     axios.get("/api/verifyToken").then(res => {
       if (res.status === 200) {
-        this.setState({ hasToken: true });
+        this.props.history.push("/");
       }
     });
   }
@@ -46,13 +46,9 @@ class Login extends Component {
       .catch(err => {
         console.log(err);
       });
-    return this.props.history.push("/");
   }
 
   render() {
-    if (this.state.hasToken) {
-      return <Redirect to="/" />;
-    }
     return (
       <Form>
         <FormGroup>

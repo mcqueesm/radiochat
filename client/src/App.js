@@ -25,11 +25,7 @@ class App extends Component {
       <BrowserRouter>
         <Route path="/" component={withAuth(Main)} exact />
         <Route path="/register" component={Register} exact />
-        <Route
-          path="/login"
-          component={this.state.loggedIn ? Main : Login}
-          exact
-        />
+        <Route path="/login" component={Login} exact />
       </BrowserRouter>
     );
   }
