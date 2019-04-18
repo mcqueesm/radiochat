@@ -3,9 +3,10 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var mongoose = require('mongoose');
+var apiRouter = require('./routes/api');
+var config = require('config');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
 
 var app = express();
 var socket_io = require( "socket.io" );
@@ -15,7 +16,16 @@ app.io = io;
 // socket.io events
 require('./socketBase.js')(io);
 
-
+//mongooseURI
+var db = config.get('mongoURI');
+// Connect to mongoose
+mongoose
+  .connect(db, {
+    useNewUrlParser: true,
+    useCreateIndex: true
+  }) // Adding new mongo url parser
+  .then(() => console.log('MongoDB Connected...'))
+.catch(err => console.log(err));
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
@@ -26,8 +36,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 //app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/api', apiRouter);
+
 
 
 

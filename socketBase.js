@@ -93,6 +93,12 @@ module.exports = function(io){
       io.sockets.in(obj.room).emit('room_chat', {msg: obj.msg, name: currentUsers[socket.id].name});
 
     });
+    /*Receives location related updates from client
+    Obj Keys:
+    id - client id
+    location - object with latitude and longitude keys giving client position
+    room - the client's current room name (null if no room)
+    radius - the client's chat radius */
     socket.on('location_update', function(clientUser){
 
       currentUsers[clientUser.id].location = clientUser.location;
@@ -131,7 +137,7 @@ module.exports = function(io){
       }
       let roomMembers = [];
       if(clientUser.room){
-        roomMembers = rooms[room].names;
+        roomMembers = rooms[clientUser.room].names;
       }
       console.log('local names is now ', localNames);
       console.log('currentNames is now ', currentNames);

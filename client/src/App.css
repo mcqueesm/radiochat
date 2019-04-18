@@ -73,7 +73,7 @@
 }
 .message-item{
   width: 100%;
-  
+
 }
 
 .clickedItem{
@@ -117,4 +117,13 @@ label{
   font-weight: bold;
   background-color: #afb3bc;
   width: 100%;
+}
+.alert{
+  position: absolute;
+  width: 75%;
+  top: 50px;
+  z-index: 2;
+}
+.alert-container{
+  position: relative;
 }

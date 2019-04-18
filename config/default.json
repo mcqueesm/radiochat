@@ -1,0 +1,4 @@
+{
+  "mongoURI": "mongodb+srv://mcqueesm:catcat1234@freecodecamp-sjvjq.gcp.mongodb.net/test?retryWrites=true",
+  "jwtSecret": "aj3kdj49ug9843h398gh9348thsfgjh34090"
+}
