@@ -31,10 +31,6 @@ import {
   Fade
 } from "reactstrap";
 
-//Create client side socket
-import * as io from "socket.io-client";
-const socket = io.connect("http://localhost:5000");
-
 //Main component for RadioChat
 class Main extends Component {
   constructor(props) {
@@ -47,7 +43,7 @@ class Main extends Component {
       roomMessages: [],
       //Stores message input
       input: "",
-      //Your socket.id
+      //Your this.props.socket.id
       id: "",
       //Your current name
       name: "",
@@ -98,38 +94,41 @@ class Main extends Component {
     var elem = document.getElementById("message-window");
     elem.scrollTop = elem.scrollHeight;
   }
+  componentWillUnmount() {
+    clearInterval(this.state.locationInterval);
+  }
 
   componentDidMount() {
     let current = this;
-
+    this.beginLocationEmit(500);
     /* This listener called when current chat room is no longer within client's
     chat radius and the server has ejected them from the room*/
-    socket.on("force_leave", function() {
+    this.props.socket.on("force_leave", function() {
       current.setState({ activeRoom: null });
     });
     //Listener for messages emitted from current room
-    socket.on("room_chat", this.addRoomMessage);
+    this.props.socket.on("room_chat", this.addRoomMessage);
     //Once connected client begins emitting location info
-    socket.on("on_connection", function(userInfo) {
-      //socket id received from server
+    this.props.socket.on("on_connection", function(userInfo) {
+      //this.props.socket id received from server
       current.setState({ id: userInfo.id }, () => {
         //emit location and set name received from server
-        current.beginLocationEmit(3000);
+
         current.setName(userInfo.name);
       });
     });
     //Room name already exists
-    socket.on("room_fail", function() {
+    this.props.socket.on("room_fail", function() {
       console.log("This name already exists");
     });
     //Receive general messages from server
-    socket.on("server_message", this.addServerMessage);
+    this.props.socket.on("server_message", this.addServerMessage);
     //If name change successful, updates name, else handles failure
-    socket.on("change_name_result", this.handleNameChangeResult);
+    this.props.socket.on("change_name_result", this.handleNameChangeResult);
     //Listens for location related updates from server
-    socket.on("locals", this.updateLocationBasedInfo);
+    this.props.socket.on("locals", this.updateLocationBasedInfo);
     //Listens for private messages from server
-    socket.on("private", this.addPrivateMessage);
+    this.props.socket.on("private", this.addPrivateMessage);
   }
   /*Add private message to state.messages and state.roomMessages
   Obj Keys:
@@ -185,7 +184,10 @@ class Main extends Component {
     this.setState({
       locationInterval: setInterval(function() {
         //Send client id, location, activeRoom and chat radius to server
-        socket.emit("location_update", {
+        if (!current.state.id) {
+          current.props.socket.emit("request_user_info");
+        }
+        current.props.socket.emit("location_update", {
           id: current.state.id,
           location: current.state.location,
           room: current.state.activeRoom,
@@ -224,7 +226,7 @@ class Main extends Component {
     event.preventDefault();
     //Send private message if user is selected from guest list
     if (this.state.activeName) {
-      socket.emit("private", {
+      this.props.socket.emit("private", {
         msg: this.state.input,
         recipient: this.state.activeName,
         name: this.state.name
@@ -232,7 +234,7 @@ class Main extends Component {
     }
     //Else if user is in a room, send to the room
     else if (this.state.activeRoom) {
-      socket.emit("room_chat", {
+      this.props.socket.emit("room_chat", {
         msg: this.state.input,
         room: this.state.activeRoom
       });
@@ -240,7 +242,7 @@ class Main extends Component {
     //If none of the above, emit message to own id
     else if (!this.state.activeName) {
       console.log("emitting message: ", this.state.input);
-      socket.emit(this.state.name, {
+      this.props.socket.emit(this.state.name, {
         msg: this.state.input,
         name: this.state.name
       });
@@ -250,7 +252,7 @@ class Main extends Component {
   }
   //Send new name request to server
   handleNameChange(name) {
-    socket.emit("change_name", name);
+    this.props.socket.emit("change_name", name);
   }
   //Handle clicking on name in Guest menu
   selectName(name) {
@@ -270,7 +272,10 @@ class Main extends Component {
     this.setState(({ activeRoom }) => {
       //If in room, leave it
       if (activeRoom) {
-        socket.emit("leave_room", { room: activeRoom, name: this.state.name });
+        this.props.socket.emit("leave_room", {
+          room: activeRoom,
+          name: this.state.name
+        });
       }
       //If clicking on room already selected, unselect
       if (activeRoom === name) {
@@ -278,14 +283,20 @@ class Main extends Component {
       }
       //Otherwise join the selected room
       else {
-        socket.emit("join_room", { room: name, name: this.state.name });
+        this.props.socket.emit("join_room", {
+          room: name,
+          name: this.state.name
+        });
         return { activeRoom: name };
       }
     });
   }
   //Called after room is created
   handleRoomCreation(name) {
-    socket.emit("room_creation", { name: name, location: this.state.location });
+    this.props.socket.emit("room_creation", {
+      name: name,
+      location: this.state.location
+    });
   }
   //Called each time range input of chat radius changes
   setChatRadius(rad) {
@@ -313,13 +324,13 @@ class Main extends Component {
     //Remove listeners for users who are no longer local
     if (noLonger) {
       noLonger.forEach(x => {
-        socket.off(x, this.addMessage);
+        this.props.socket.off(x, this.addMessage);
       });
     }
     //Add listener for users who are local
     if (newUsers) {
       newUsers.forEach(x => {
-        socket.on(x, this.addMessage);
+        this.props.socket.on(x, this.addMessage);
       });
     }
     //Update localUsers

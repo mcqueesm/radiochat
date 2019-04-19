@@ -10,6 +10,10 @@ module.exports = function(io) {
 
     guestNum = assignName(socket, guestNum, currentUsers, currentNames);
 
+    socket.on("request_user_info", function() {
+      socket.emit("on_connection", currentUsers[socket.id]);
+    });
+
     socket.on("private", function(obj) {
       let id = null;
       for (var user in currentUsers) {
@@ -93,56 +97,58 @@ module.exports = function(io) {
     room - the client's current room name (null if no room)
     radius - the client's chat radius */
     socket.on("location_update", function(clientUser) {
-      currentUsers[clientUser.id].location = clientUser.location;
-      currentUsers[clientUser.id].radius = clientUser.radius;
-      let name = currentUsers[clientUser.id].name;
-      let localNames = [];
-      let lat1 = clientUser.location.latitude;
-      let lon1 = clientUser.location.longitude;
-      for (var user in currentUsers) {
-        let lat2 = currentUsers[user].location.latitude;
-        let lon2 = currentUsers[user].location.longitude;
-        let dist = distance(lat1, lon1, lat2, lon2);
-        if (
-          dist <= clientUser.radius &&
-          dist <= currentUsers[user].radius &&
-          !currentUsers[user].inRoom
-        ) {
-          localNames.push(currentUsers[user].name);
-        }
-        if (currentUsers[socket.id].inRoom) {
-          let roomName = currentUsers[socket.id].inRoom;
-          let roomLat = rooms[roomName].location.latitude;
-          let roomLon = rooms[roomName].location.longitude;
-          if (distance(lat1, lon1, roomLat, roomLon) > clientUser.radius) {
-            socket.leave(roomName);
-            socket.emit("force_leave");
-            rooms[roomName].names = rooms[roomName].names.filter(
-              x => x !== name
-            );
-            currentUsers[socket.id].inRoom = null;
+      if (clientUser.id) {
+        currentUsers[clientUser.id].location = clientUser.location;
+        currentUsers[clientUser.id].radius = clientUser.radius;
+        let name = currentUsers[clientUser.id].name;
+        let localNames = [];
+        let lat1 = clientUser.location.latitude;
+        let lon1 = clientUser.location.longitude;
+        for (var user in currentUsers) {
+          let lat2 = currentUsers[user].location.latitude;
+          let lon2 = currentUsers[user].location.longitude;
+          let dist = distance(lat1, lon1, lat2, lon2);
+          if (
+            dist <= clientUser.radius &&
+            dist <= currentUsers[user].radius &&
+            !currentUsers[user].inRoom
+          ) {
+            localNames.push(currentUsers[user].name);
+          }
+          if (currentUsers[socket.id].inRoom) {
+            let roomName = currentUsers[socket.id].inRoom;
+            let roomLat = rooms[roomName].location.latitude;
+            let roomLon = rooms[roomName].location.longitude;
+            if (distance(lat1, lon1, roomLat, roomLon) > clientUser.radius) {
+              socket.leave(roomName);
+              socket.emit("force_leave");
+              rooms[roomName].names = rooms[roomName].names.filter(
+                x => x !== name
+              );
+              currentUsers[socket.id].inRoom = null;
+            }
           }
         }
-      }
-      let localRooms = [];
-      for (var room in rooms) {
-        let lat2 = rooms[room].location.latitude;
-        let lon2 = rooms[room].location.longitude;
-        if (distance(lat1, lon1, lat2, lon2) <= clientUser.radius) {
-          localRooms.push(room);
+        let localRooms = [];
+        for (var room in rooms) {
+          let lat2 = rooms[room].location.latitude;
+          let lon2 = rooms[room].location.longitude;
+          if (distance(lat1, lon1, lat2, lon2) <= clientUser.radius) {
+            localRooms.push(room);
+          }
         }
+        let roomMembers = [];
+        if (clientUser.room) {
+          roomMembers = rooms[clientUser.room].names;
+        }
+        console.log("local names is now ", localNames);
+        console.log("currentNames is now ", currentNames);
+        socket.emit("locals", {
+          names: localNames,
+          rooms: localRooms,
+          roomNames: roomMembers
+        });
       }
-      let roomMembers = [];
-      if (clientUser.room) {
-        roomMembers = rooms[clientUser.room].names;
-      }
-      console.log("local names is now ", localNames);
-      console.log("currentNames is now ", currentNames);
-      socket.emit("locals", {
-        names: localNames,
-        rooms: localRooms,
-        roomNames: roomMembers
-      });
     });
     socket.on("disconnect", function() {
       console.log("DISCONNECTED!");
