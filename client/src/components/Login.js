@@ -1,6 +1,5 @@
 import React, { Component } from "react";
-import { Form, FormGroup, Label, Button, Col, Input } from "reactstrap";
-import { Redirect } from "react-router-dom";
+import { Alert, Form, FormGroup, Button, Col, Input } from "reactstrap";
 import axios from "axios";
 
 class Login extends Component {
@@ -9,17 +8,22 @@ class Login extends Component {
     this.state = {
       email: "",
       password: "",
-      hasToken: false
+      hasToken: false,
+      error: false,
+      errorMsg: []
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
   componentWillMount() {
-    axios.get("/api/verifyToken").then(res => {
-      if (res.status === 200) {
-        this.props.history.push("/");
-      }
-    });
+    axios
+      .get("/api/verifyToken")
+      .then(res => {
+        if (res.status === 200) {
+          this.props.history.push("/");
+        }
+      })
+      .catch(err => console.log(err));
   }
 
   handleChange(e) {
@@ -44,51 +48,58 @@ class Login extends Component {
       .post("/api/login", body, config)
       .then(res => this.props.history.push("/"))
       .catch(err => {
-        console.log(err);
+        this.setState({ error: true, errorMsg: err.response.data });
       });
   }
 
   render() {
+    let errorMessages = this.state.errorMsg.map((err, index) => {
+      return <div key={index}> * {err.msg} </div>;
+    });
+
     return (
-      <Form>
-        <FormGroup>
-          <Label for="email" sm={2}>
-            Email
-          </Label>
-          <Col sm={10}>
-            <Input
-              value={this.state.email}
-              type="email"
-              name="email"
-              id="email"
-              placeholder="Enter email"
-              onChange={e => this.handleChange(e)}
-            />
-          </Col>
-        </FormGroup>
-        <FormGroup>
-          <Label for="password" sm={2}>
-            Password
-          </Label>
-          <Col sm={10}>
-            <Input
-              value={this.state.password}
-              type="password"
-              name="password"
-              id="password"
-              placeholder="Enter password"
-              onChange={e => this.handleChange(e)}
-            />
-          </Col>
-        </FormGroup>
-        <FormGroup check row>
-          <Col sm={{ size: 10, offset: 2 }}>
-            <Button type="submit" onClick={e => this.handleSubmit(e)}>
-              Submit
-            </Button>
-          </Col>
-        </FormGroup>
-      </Form>
+      <div id="register-container">
+        <div className="title">
+          <h1>Sign In </h1>
+        </div>
+        {this.state.error ? (
+          <div>
+            <Alert color="danger">{errorMessages}</Alert>
+          </div>
+        ) : null}
+        <Form id="registration-form">
+          <FormGroup row>
+            <Col sm={12}>
+              <Input
+                className="register-input"
+                value={this.state.email}
+                type="email"
+                name="email"
+                id="email"
+                placeholder="Enter email"
+                onChange={e => this.handleChange(e)}
+              />
+            </Col>
+          </FormGroup>
+          <FormGroup row>
+            <Col sm={12}>
+              <Input
+                className="register-input"
+                value={this.state.password}
+                type="password"
+                name="password"
+                id="password"
+                placeholder="Enter password"
+                onChange={e => this.handleChange(e)}
+              />
+            </Col>
+          </FormGroup>
+
+          <Button type="submit" onClick={e => this.handleSubmit(e)}>
+            Submit
+          </Button>
+        </Form>
+      </div>
     );
   }
 }

@@ -2,23 +2,32 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { check, validationResult } = require("express-validator/check");
+const { sanitizeBody } = require("express-validator/filter");
 var jwt = require("jsonwebtoken");
 var config = require("config");
 
 //Use express-validator to find errors on registration form
 exports.check_errors = [
-  check("first", "First name between 1 and 20 characters").isLength({
-    min: 1,
-    max: 20
-  }),
-  check("last", "Last name between 1 and 20 characters").isLength({
-    min: 1,
-    max: 20
-  }),
-  check("email", "Invalid email address").isEmail(),
-  check("password", "Password must contain at least 8 characters").isLength({
-    min: 8
-  })
+  check("first", "First name between 1 and 20 characters")
+    .isLength({
+      min: 1,
+      max: 20
+    })
+    .escape(),
+  check("last", "Last name between 1 and 20 characters")
+    .isLength({
+      min: 1,
+      max: 20
+    })
+    .escape(),
+  check("email", "Invalid email address")
+    .isEmail()
+    .escape(),
+  check("password", "Password must contain at least 8 characters")
+    .isLength({
+      min: 8
+    })
+    .escape()
 ];
 
 exports.register_user = function(req, res, next) {
@@ -28,13 +37,12 @@ exports.register_user = function(req, res, next) {
 
   //Handle errors
   if (!errors.isEmpty()) {
-    res.send("Registration fields not properly entered");
-    return;
+    return res.status(400).json(errorArray);
   }
   //Look for user in database
   User.findOne({ email }).then(user => {
     //User already exists
-    if (user) return res.status(400).json({ msg: "User already exists" });
+    if (user) return res.status(400).json([{ msg: "User already exists" }]);
 
     //Create new user
     const newUser = new User({
@@ -71,20 +79,25 @@ exports.register_user = function(req, res, next) {
     });
   });
 };
+exports.sanitize_login = [
+  sanitizeBody("email").escape(),
+  sanitizeBody("password").escape()
+];
+
 exports.authorize_user = function(req, res, next) {
   const { email, password } = req.body;
-
+  check("email");
   //Check that fields aren't empty
   if (!email || !password) {
-    res.status(400).json({ msg: "All fields must be entered" });
+    res.status(400).json([{ msg: "All fields must be filled" }]);
   }
   //Look for user in database
   User.findOne({ email }).then(user => {
     //User already exists
-    if (!user) return res.status(400).json({ msg: "User does not exist" });
+    if (!user) return res.status(400).json([{ msg: "User does not exist" }]);
 
     bcrypt.compare(password, user.password).then(match => {
-      if (!match) return res.status(400).json({ msg: "Invalid Password" });
+      if (!match) return res.status(400).json([{ msg: "Invalid Password" }]);
 
       jwt.sign(
         { id: user.id },
@@ -121,4 +134,9 @@ exports.withAuth = function(req, res, next) {
 
 exports.success = function(req, res, next) {
   res.sendStatus(200);
+};
+
+exports.logout = function(req, res, next) {
+  res.clearCookie("token");
+  return res.sendStatus(200);
 };

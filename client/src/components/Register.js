@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Form, FormGroup, Label, Button, Col, Input } from "reactstrap";
+import { Alert, Form, FormGroup, Button, Col, Input } from "reactstrap";
 import axios from "axios";
 
 class Register extends Component {
@@ -10,7 +10,9 @@ class Register extends Component {
       last: "",
       email: "",
       password: "",
-      token: ""
+      token: "",
+      error: false,
+      errorMsg: []
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -36,83 +38,87 @@ class Register extends Component {
 
     axios
       .post("/api/register", body, config)
-      .then(res => this.setState({ token: res.data.token }))
+      .then(res => {
+        if (res.status === 200) this.props.history.push("/login");
+      })
       .catch(err => {
-        console.log(err);
+        this.setState({ error: true, errorMsg: err.response.data });
       });
   }
 
   render() {
+    let errorMessages = this.state.errorMsg.map((err, index) => {
+      return <div key={index}> * {err.msg} </div>;
+    });
+
     return (
-      <Form>
-        <FormGroup>
-          <Label for="first" sm={2}>
-            First Name
-          </Label>
-          <Col sm={10}>
-            <Input
-              value={this.state.first}
-              type="text"
-              name="first"
-              id="first"
-              placeholder="Enter first name"
-              onChange={e => this.handleChange(e)}
-            />
-          </Col>
-        </FormGroup>
-        <FormGroup>
-          <Label for="last" sm={2}>
-            Last Name
-          </Label>
-          <Col sm={10}>
-            <Input
-              value={this.state.last}
-              type="text"
-              name="last"
-              id="last"
-              placeholder="Enter last name"
-              onChange={e => this.handleChange(e)}
-            />
-          </Col>
-        </FormGroup>
-        <FormGroup>
-          <Label for="email" sm={2}>
-            Email
-          </Label>
-          <Col sm={10}>
-            <Input
-              value={this.state.email}
-              type="email"
-              name="email"
-              id="email"
-              placeholder="Enter email"
-              onChange={e => this.handleChange(e)}
-            />
-          </Col>
-        </FormGroup>
-        <FormGroup>
-          <Label for="password" sm={2}>
-            Password
-          </Label>
-          <Col sm={10}>
-            <Input
-              value={this.state.password}
-              type="password"
-              name="password"
-              id="password"
-              placeholder="Enter password"
-              onChange={e => this.handleChange(e)}
-            />
-          </Col>
-        </FormGroup>
-        <FormGroup check row>
-          <Col sm={{ size: 10, offset: 2 }}>
-            <Button type="submit" onClick={e => this.handleSubmit(e)}>
-              Submit
-            </Button>
-          </Col>
-        </FormGroup>
-      </Form>
+      <div id="register-container">
+        <div className="title">
+          <h1>Register New User</h1>
+        </div>
+        {this.state.error ? (
+          <div>
+            <Alert color="danger">{errorMessages}</Alert>
+          </div>
+        ) : null}
+        <Form id="registration-form">
+          <FormGroup row className="form-group">
+            <Col sm={6}>
+              <Input
+                className="register-input"
+                value={this.state.first}
+                type="text"
+                name="first"
+                id="first"
+                placeholder="First name"
+                onChange={e => this.handleChange(e)}
+              />
+            </Col>
+
+            <Col sm={6}>
+              <Input
+                className="register-input"
+                value={this.state.last}
+                type="text"
+                name="last"
+                id="last"
+                placeholder="Last name"
+                onChange={e => this.handleChange(e)}
+              />
+            </Col>
+          </FormGroup>
+          <FormGroup row className="form-group">
+            <Col sm={12}>
+              <Input
+                className="register-input"
+                value={this.state.email}
+                type="email"
+                name="email"
+                id="email"
+                placeholder="Enter email"
+                onChange={e => this.handleChange(e)}
+              />
+            </Col>
+          </FormGroup>
+          <FormGroup row className="form-group">
+            <Col sm={12}>
+              <Input
+                className="register-input"
+                value={this.state.password}
+                type="password"
+                name="password"
+                id="password"
+                placeholder="Enter password"
+                onChange={e => this.handleChange(e)}
+              />
+            </Col>
+          </FormGroup>
+
+          <Button type="submit" onClick={e => this.handleSubmit(e)}>
+            Submit
+          </Button>
+        </Form>
+      </div>
     );
   }
 }

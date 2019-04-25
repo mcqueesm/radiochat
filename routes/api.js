@@ -12,11 +12,13 @@ router.post("/register", controller.check_errors, controller.register_user);
 //@route POST api/auth
 //@desc Authenticate user
 //@access Public
-router.post("/login", controller.authorize_user);
+router.post("/login", controller.sanitize_login, controller.authorize_user);
 
 //@route GET api/verifyToken
 //@desc Middleware to check for verifyToken
 //@access Public
 router.get("/verifyToken", controller.withAuth, controller.success);
+
+router.get("/logout", controller.logout);
 
 module.exports = router;

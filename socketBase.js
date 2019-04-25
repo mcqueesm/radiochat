@@ -1,4 +1,4 @@
-const uuid = require("uuid");
+var validator = require("validator");
 let guestNum = 1;
 let currentUsers = {};
 let currentNames = [];
@@ -13,7 +13,9 @@ module.exports = function(io) {
     socket.on("request_user_info", function() {
       socket.emit("on_connection", currentUsers[socket.id]);
     });
-
+    socket.on("update_radius", function(rad) {
+      currentUsers[socket.id].radius = rad;
+    });
     socket.on("private", function(obj) {
       let id = null;
       for (var user in currentUsers) {
@@ -23,31 +25,62 @@ module.exports = function(io) {
         }
       }
       if (id) {
-        io.to(id).emit("private", { name: obj.name, msg: obj.msg });
-        io.to(socket.id).emit("private", { name: obj.name, msg: obj.msg });
+        let name = validator.escape(obj.name);
+        let message = validator.escape(obj.msg);
+        io.to(id).emit("private", { name: name, msg: message });
+        io.to(socket.id).emit("private", { name: name, msg: message });
       } else {
         io.to(socket.id).emit("private", "Private message failed");
       }
     });
-    socket.on("room_creation", function(obj) {
+    socket.on("room_creation", function(roomName) {
+      roomName = validator.escape(roomName);
       let currentRooms = Object.keys(rooms);
-      if (!currentRooms.includes(obj.name)) {
-        rooms[obj.name] = { location: obj.location, names: [] };
-        currentRooms.push(obj.name);
+      let isLength = validator.isLength(roomName, { min: 1, max: 20 });
+      let isAlphNum = validator.isAlphanumeric(roomName);
+      if (!isLength || !isAlphNum) {
+        let result = {
+          success: false,
+          name: null,
+          msg: "Room name must be 1-20 alphanumeric characters"
+        };
+        socket.emit("change_name_result", result);
+      } else if (!currentRooms.includes(roomName)) {
+        rooms[roomName] = {
+          location: currentUsers[socket.id].location,
+          names: []
+        };
+        currentRooms.push(roomName);
         console.log("here are current rooms", currentRooms);
-        io.emit("room_update", currentRooms);
-        console.log(rooms);
+        socket.emit("join_created_room", roomName);
       } else {
-        socket.emit("room_failure");
+        let result = {
+          success: false,
+          name: null,
+          msg: roomName + " already exists"
+        };
+        socket.emit("change_name_result", result);
       }
     });
+
     socket.on("change_name", function(newName) {
       let result = {};
       let oldName = currentUsers[socket.id].name;
-      if (currentNames.includes(newName)) {
-        result = { success: false, name: null };
-        let message = newName + " is already taken";
-        socket.emit("server_message", { type: "warning", message: message });
+      newName = validator.escape(newName);
+      let isLength = validator.isLength(newName, { min: 1, max: 20 });
+      let isAlphNum = validator.isAlphanumeric(newName);
+      if (!isAlphNum || !isLength) {
+        result = {
+          success: false,
+          name: null,
+          msg: "Name must be 1-20 alphanumeric characters"
+        };
+      } else if (currentNames.includes(newName)) {
+        result = {
+          success: false,
+          name: null,
+          msg: newName + " is already taken"
+        };
       } else {
         changeName(socket, newName, currentUsers, currentNames);
         result = { success: true, name: newName };
@@ -85,8 +118,9 @@ module.exports = function(io) {
     });
     socket.on("room_chat", function(obj) {
       console.log(obj.room);
+      let message = validator.escape(obj.msg);
       io.sockets.in(obj.room).emit("room_chat", {
-        msg: obj.msg,
+        msg: message,
         name: currentUsers[socket.id].name
       });
     });
@@ -95,60 +129,61 @@ module.exports = function(io) {
     id - client id
     location - object with latitude and longitude keys giving client position
     room - the client's current room name (null if no room)
-    radius - the client's chat radius */
+     */
     socket.on("location_update", function(clientUser) {
-      if (clientUser.id) {
-        currentUsers[clientUser.id].location = clientUser.location;
-        currentUsers[clientUser.id].radius = clientUser.radius;
-        let name = currentUsers[clientUser.id].name;
-        let localNames = [];
-        let lat1 = clientUser.location.latitude;
-        let lon1 = clientUser.location.longitude;
-        for (var user in currentUsers) {
-          let lat2 = currentUsers[user].location.latitude;
-          let lon2 = currentUsers[user].location.longitude;
-          let dist = distance(lat1, lon1, lat2, lon2);
-          if (
-            dist <= clientUser.radius &&
-            dist <= currentUsers[user].radius &&
-            !currentUsers[user].inRoom
-          ) {
-            localNames.push(currentUsers[user].name);
-          }
-          if (currentUsers[socket.id].inRoom) {
-            let roomName = currentUsers[socket.id].inRoom;
-            let roomLat = rooms[roomName].location.latitude;
-            let roomLon = rooms[roomName].location.longitude;
-            if (distance(lat1, lon1, roomLat, roomLon) > clientUser.radius) {
-              socket.leave(roomName);
-              socket.emit("force_leave");
-              rooms[roomName].names = rooms[roomName].names.filter(
-                x => x !== name
-              );
-              currentUsers[socket.id].inRoom = null;
-            }
+      currentUsers[socket.id].location = clientUser.location;
+      let name = currentUsers[socket.id].name;
+      let localNames = [];
+      let lat1 = clientUser.location.latitude;
+      let lon1 = clientUser.location.longitude;
+      let myRad = currentUsers[socket.id].radius;
+      for (var user in currentUsers) {
+        let lat2 = currentUsers[user].location.latitude;
+        let lon2 = currentUsers[user].location.longitude;
+        let dist = distance(lat1, lon1, lat2, lon2);
+        if (
+          dist <= myRad &&
+          dist <= currentUsers[user].radius &&
+          !currentUsers[user].inRoom
+        ) {
+          localNames.push(currentUsers[user].name);
+        }
+        if (currentUsers[socket.id].inRoom) {
+          let roomName = currentUsers[socket.id].inRoom;
+          let roomLat = rooms[roomName].location.latitude;
+          let roomLon = rooms[roomName].location.longitude;
+          if (distance(lat1, lon1, roomLat, roomLon) > myRad) {
+            socket.leave(roomName);
+            socket.emit("force_leave");
+            rooms[roomName].names = rooms[roomName].names.filter(
+              x => x !== name
+            );
+            currentUsers[socket.id].inRoom = null;
           }
         }
-        let localRooms = [];
-        for (var room in rooms) {
-          let lat2 = rooms[room].location.latitude;
-          let lon2 = rooms[room].location.longitude;
-          if (distance(lat1, lon1, lat2, lon2) <= clientUser.radius) {
-            localRooms.push(room);
-          }
-        }
-        let roomMembers = [];
-        if (clientUser.room) {
-          roomMembers = rooms[clientUser.room].names;
-        }
-        console.log("local names is now ", localNames);
-        console.log("currentNames is now ", currentNames);
-        socket.emit("locals", {
-          names: localNames,
-          rooms: localRooms,
-          roomNames: roomMembers
-        });
       }
+      let localRooms = [];
+      for (var room in rooms) {
+        let lat2 = rooms[room].location.latitude;
+        let lon2 = rooms[room].location.longitude;
+        if (
+          distance(lat1, lon1, lat2, lon2) <= currentUsers[socket.id].radius
+        ) {
+          localRooms.push(room);
+        }
+      }
+      let roomMembers = [];
+      if (rooms[clientUser.room]) {
+        roomMembers = rooms[clientUser.room].names;
+      }
+      console.log("local names is now ", localNames);
+      console.log("currentNames is now ", currentNames);
+      console.log("local rooms is now ", localRooms);
+      socket.emit("locals", {
+        names: localNames,
+        rooms: localRooms,
+        roomNames: roomMembers
+      });
     });
     socket.on("disconnect", function() {
       console.log("DISCONNECTED!");
@@ -193,7 +228,8 @@ module.exports = function(io) {
   }
   function handleChat(obj) {
     console.log("in server handleChat, message is: ", obj.msg);
-    io.emit(obj.name, { msg: obj.msg, name: obj.name });
+    let message = validator.escape(obj.msg);
+    io.emit(obj.name, { msg: message, name: obj.name });
   }
   function distance(lat1, lon1, lat2, lon2, unit) {
     lat1 = Math.floor(lat1 * 1000) / 1000;
