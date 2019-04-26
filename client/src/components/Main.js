@@ -67,6 +67,18 @@ class Main extends Component {
     this.handleNameChangeResult = this.handleNameChangeResult.bind(this);
     this.updateLocationBasedInfo = this.updateLocationBasedInfo.bind(this);
     this.addPrivateMessage = this.addPrivateMessage.bind(this);
+
+    let current = this;
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(function(position) {
+        current.setState({
+          location: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          }
+        });
+      });
+    }
   }
   componentWillUpdate() {
     //Cause message window to scroll automatically for message overflow
@@ -310,7 +322,7 @@ class Main extends Component {
   render() {
     let current = this;
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(function(position) {
+      navigator.geolocation.watchPosition(function(position) {
         current.setState({
           location: {
             latitude: position.coords.latitude,
