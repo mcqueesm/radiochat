@@ -9,7 +9,7 @@ import withAuth from "./components/withAuth";
 import "./components/css/Register.css";
 //Create client side socket
 import * as io from "socket.io-client";
-const socket = io.connect("http://localhost:5000");
+const socket = io.connect("https://evening-sierra-32211.herokuapp.com/");
 
 class App extends Component {
   constructor(props) {
