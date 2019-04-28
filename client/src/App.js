@@ -11,7 +11,7 @@ import "./components/css/Register.css";
 import * as io from "socket.io-client";
 
 let production = "https://evening-sierra-32211.herokuapp.com/";
-const socket = io.connect(production);
+const socket = io.connect("http://localhost:3000");
 
 class App extends Component {
   constructor(props) {
