@@ -10,7 +10,7 @@ import "./components/css/Register.css";
 //Create client side socket
 import * as io from "socket.io-client";
 
-let production = "https://powerful-fortress-57169.herokuapp.com/";
+let production = "https://murmuring-refuge-67436.herokuapp.com/";
 const socket = io.connect(production);
 
 class App extends Component {
