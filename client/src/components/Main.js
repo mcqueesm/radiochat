@@ -91,7 +91,7 @@ class Main extends Component {
 
   componentDidMount() {
     let current = this;
-    this.beginLocationEmit(500);
+    this.beginLocationEmit(5000);
     /* This listener called when current chat room is no longer within client's
     chat radius and the server has ejected them from the room*/
     this.props.socket.on("force_leave", function() {
