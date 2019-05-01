@@ -68,18 +68,6 @@ class Main extends Component {
     this.handleNameChangeResult = this.handleNameChangeResult.bind(this);
     this.updateLocationBasedInfo = this.updateLocationBasedInfo.bind(this);
     this.addPrivateMessage = this.addPrivateMessage.bind(this);
-
-    let current = this;
-    if ("geolocation" in navigator) {
-      navigator.geolocation.watchPosition(function(position) {
-        current.setState({
-          location: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          }
-        });
-      });
-    }
   }
   componentWillUpdate() {
     //Cause message window to scroll automatically for message overflow
@@ -92,6 +80,17 @@ class Main extends Component {
 
   componentDidMount() {
     let current = this;
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(function(position) {
+        current.setState({
+          location: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          }
+        });
+      });
+    }
     this.beginLocationEmit(5000);
     /* This listener called when current chat room is no longer within client's
     chat radius and the server has ejected them from the room*/
@@ -322,16 +321,7 @@ class Main extends Component {
 
   render() {
     let current = this;
-    if ("geolocation" in navigator) {
-      navigator.geolocation.watchPosition(function(position) {
-        current.setState({
-          location: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          }
-        });
-      });
-    }
+
     let messageList = this.state.messages.map((x, index) => {
       return (
         <div
