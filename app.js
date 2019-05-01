@@ -10,9 +10,10 @@ var config = require("config");
 var app = express();
 var socket_io = require("socket.io");
 var io = socket_io();
-app.io = io;
 
 // socket.io events
+
+app.io = io;
 require("./socketBase.js")(io);
 
 //mongooseURI

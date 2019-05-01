@@ -10,11 +10,11 @@ import "./components/css/Register.css";
 //Create client side socket
 import * as io from "socket.io-client";
 
-let dev = "http://localhost:3000";
+let dev = "http://localhost:5000";
 let production = "https://murmuring-refuge-67436.herokuapp.com/";
 const socket = io.connect(
-  production,
-  { forceBase64: 1 }
+  dev,
+  { reconnect: true }
 );
 
 class App extends Component {

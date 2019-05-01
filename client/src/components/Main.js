@@ -13,6 +13,7 @@ import {
   Fade
 } from "reactstrap";
 import "../App.css";
+
 //Main component for RadioChat
 class Main extends Component {
   constructor(props) {
@@ -85,9 +86,9 @@ class Main extends Component {
     var elem = document.getElementById("message-window");
     elem.scrollTop = elem.scrollHeight;
   }
-  componentWillUnmount() {
+  /*componentWillUnmount() {
     clearInterval(this.state.locationInterval);
-  }
+  }*/
 
   componentDidMount() {
     let current = this;
