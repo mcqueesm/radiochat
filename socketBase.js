@@ -232,10 +232,10 @@ module.exports = function(io) {
     io.emit(obj.name, { msg: message, name: obj.name });
   }
   function distance(lat1, lon1, lat2, lon2, unit) {
-    lat1 = Math.floor(lat1 * 1000) / 1000;
-    lon1 = Math.floor(lon1 * 1000) / 1000;
-    lat2 = Math.floor(lat2 * 1000) / 1000;
-    lon2 = Math.floor(lon2 * 1000) / 1000;
+    lat1 = Math.floor(lat1 * 1000000) / 1000000;
+    lon1 = Math.floor(lon1 * 1000000) / 1000000;
+    lat2 = Math.floor(lat2 * 1000000) / 1000000;
+    lon2 = Math.floor(lon2 * 1000000) / 1000000;
     console.log(lat1 + " " + " " + lon1 + " " + lat2 + " " + lon2);
     var radlat1 = (Math.PI * lat1) / 180;
     var radlat2 = (Math.PI * lat2) / 180;

@@ -21,10 +21,15 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      socket: socket
+      socket: socket,
+      radius: 1
     };
     this.login = this.login.bind(this);
     this.logout = this.logout.bind(this);
+    this.setRadius = this.setRadius.bind(this);
+  }
+  setRadius(rad) {
+    this.setState({ radius: rad });
   }
   login() {
     this.setState({ loggedIn: true });
@@ -35,20 +40,28 @@ class App extends Component {
   render() {
     return (
       <BrowserRouter>
-        <MediaQuery query="(orientation: portrait)">
-          <Route
-            path="/"
-            render={props => (
-              <RadioNav {...props} portrait={true} socket={this.state.socket} />
-            )}
-          />
-        </MediaQuery>
-        <MediaQuery query="(orientation: landscape)">
+        <MediaQuery query="(max-device-width: 1224px)">
           <Route
             path="/"
             render={props => (
               <RadioNav
                 {...props}
+                radius={this.state.radius}
+                setRadius={this.setRadius}
+                portrait={true}
+                socket={this.state.socket}
+              />
+            )}
+          />
+        </MediaQuery>
+        <MediaQuery query="(min-device-width: 1224px)">
+          <Route
+            path="/"
+            render={props => (
+              <RadioNav
+                {...props}
+                radius={this.state.radius}
+                setRadius={this.setRadius}
                 portrait={false}
                 socket={this.state.socket}
               />

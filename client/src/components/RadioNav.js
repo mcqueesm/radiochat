@@ -17,10 +17,7 @@ import "../App.css";
 class InnerNav extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      //Chat radius
-      radius: 1
-    };
+    this.state = {};
     this.handleNameChange = this.handleNameChange.bind(this);
     this.handleRoomCreation = this.handleRoomCreation.bind(this);
     this.setChatRadius = this.setChatRadius.bind(this);
@@ -36,7 +33,7 @@ class InnerNav extends Component {
   }
   //Called each time range input of chat radius changes
   setChatRadius(rad) {
-    this.setState({ radius: rad });
+    this.props.setRadius(rad);
     this.props.socket.emit("update_radius", rad);
   }
 
@@ -69,7 +66,8 @@ class InnerNav extends Component {
                 btnText="Chat Radius"
                 title="Set chat radius (miles): "
                 isRange={true}
-                setChatRadius={this.setChatRadius}
+                radius={this.props.radius}
+                setRadius={this.setChatRadius}
               />
             </NavItem>
 

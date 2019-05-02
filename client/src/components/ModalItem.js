@@ -29,9 +29,7 @@ class ModalItem extends Component {
     this.setState({ roomName: "", modal: false });
   }
   handleChange(event) {
-    this.setState({ radius: event.target.value }, () => {
-      this.props.setChatRadius(this.state.radius);
-    });
+    this.props.setRadius(event.target.value);
   }
   modalToggle() {
     this.setState({ modal: !this.state.modal });
@@ -47,7 +45,7 @@ class ModalItem extends Component {
         >
           <ModalHeader toggle={this.modalToggle}>
             {this.props.title}
-            {this.props.isRange ? this.state.radius : ""}
+            {this.props.isRange ? this.props.radius : ""}
           </ModalHeader>
           <ModalBody>
             <Form>
@@ -62,7 +60,7 @@ class ModalItem extends Component {
                       max="1"
                       step="0.01"
                       onChange={e => this.handleChange(e)}
-                      value={this.state.radius}
+                      value={this.props.radius}
                     />
                     <label>1.0</label>
                   </div>
