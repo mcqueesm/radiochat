@@ -81,15 +81,27 @@ class Main extends Component {
   componentDidMount() {
     let current = this;
 
+    let options = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 10000
+    };
+
     if ("geolocation" in navigator) {
-      navigator.geolocation.watchPosition(function(position) {
-        current.setState({
-          location: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          }
-        });
-      });
+      navigator.geolocation.watchPosition(
+        function(position) {
+          current.setState({
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }
+          });
+        },
+        function error(msg) {
+          alert("Please enable your GPS position feature.");
+        },
+        options
+      );
     }
     this.beginLocationEmit(1000);
     /* This listener called when current chat room is no longer within client's
