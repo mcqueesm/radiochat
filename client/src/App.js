@@ -40,7 +40,7 @@ class App extends Component {
   render() {
     return (
       <BrowserRouter>
-        <MediaQuery query="(max-device-width: 1224px)">
+        <MediaQuery query="(max-device-width: 500px)">
           <Route
             path="/"
             render={props => (
@@ -54,7 +54,7 @@ class App extends Component {
             )}
           />
         </MediaQuery>
-        <MediaQuery query="(min-device-width: 1224px)">
+        <MediaQuery query="(min-device-width: 500px)">
           <Route
             path="/"
             render={props => (

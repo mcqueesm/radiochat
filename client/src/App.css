@@ -124,7 +124,7 @@ label {
 .portrait-nav {
   display: block;
 }
-@media only screen and (orientation: portrait) {
+@media only screen and (max-width: 500px) {
   #message-container {
     height: 100%;
     flex-direction: column;
