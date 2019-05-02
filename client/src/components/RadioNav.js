@@ -48,6 +48,7 @@ class InnerNav extends Component {
           <>
             <NavItem className="nav-items">
               <ModalItem
+                toggleNavbar={this.props.toggleNavbar}
                 btnText="Change Name"
                 title="Enter new name: "
                 handleClick={this.handleNameChange}
@@ -56,6 +57,7 @@ class InnerNav extends Component {
 
             <NavItem className="nav-items">
               <ModalItem
+                toggleNavbar={this.props.toggleNavbar}
                 btnText="Create Room"
                 title="Enter room name:"
                 handleClick={this.handleRoomCreation}
@@ -63,6 +65,7 @@ class InnerNav extends Component {
             </NavItem>
             <NavItem className="nav-items">
               <ModalItem
+                toggleNavbar={this.props.toggleNavbar}
                 btnText="Chat Radius"
                 title="Set chat radius (miles): "
                 isRange={true}
@@ -124,6 +127,7 @@ class RadioNav extends Component {
               <Collapse isOpen={!this.state.collapsed} navbar>
                 <InnerNav
                   {...this.props}
+                  toggleNavbar={this.toggleNavbar}
                   navClass={this.state.portrait ? "portrait-nav" : null}
                 />
               </Collapse>

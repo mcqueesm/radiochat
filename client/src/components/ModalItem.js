@@ -26,12 +26,14 @@ class ModalItem extends Component {
   handleClick(event) {
     event.preventDefault();
     this.props.handleClick(this.state.roomName);
-    this.setState({ roomName: "", modal: false });
+    this.setState({ roomName: "" });
+    this.modalToggle();
   }
   handleChange(event) {
     this.props.setRadius(event.target.value);
   }
   modalToggle() {
+    if (this.state.modal) this.props.toggleNavbar();
     this.setState({ modal: !this.state.modal });
   }
   render() {

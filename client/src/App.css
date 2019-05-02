@@ -39,12 +39,18 @@
   justify-content: flex-start;
   height: 50%;
   border-bottom: solid 1px black;
+  padding: 0.5%;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 #room-list {
+  padding: 0.5%;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   height: 50%;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 #message-window {
   padding: 0.5%;

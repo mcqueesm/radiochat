@@ -320,8 +320,6 @@ class Main extends Component {
   }
 
   render() {
-    let current = this;
-
     let messageList = this.state.messages.map((x, index) => {
       return (
         <div
