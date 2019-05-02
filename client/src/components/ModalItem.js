@@ -33,7 +33,9 @@ class ModalItem extends Component {
     this.props.setRadius(event.target.value);
   }
   modalToggle() {
-    if (this.state.modal) this.props.toggleNavbar();
+    if (this.state.modal && typeof this.props.toggleNavbar !== "undefined") {
+      this.props.toggleNavbar();
+    }
     this.setState({ modal: !this.state.modal });
   }
   render() {
