@@ -74,13 +74,10 @@ class Main extends Component {
     var elem = document.getElementById("message-window");
     elem.scrollTop = elem.scrollHeight;
   }
-  /*componentWillUnmount() {
-    clearInterval(this.state.locationInterval);
-  }*/
 
   componentDidMount() {
     let current = this;
-
+    //Begin watching geolocation and updating state location
     let options = {
       enableHighAccuracy: true,
       timeout: 5000,

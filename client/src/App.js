@@ -9,33 +9,29 @@ import withAuth from "./components/withAuth";
 import "./components/css/Register.css";
 //Create client side socket
 import * as io from "socket.io-client";
-
+//Heroku url
 let production = "https://murmuring-refuge-67436.herokuapp.com/";
 const socket = io.connect(
   production,
   { reconnect: true }
 );
-
+//Primary component
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      //Socket.io
       socket: socket,
+      //Chat radius
       radius: 1
     };
-    this.login = this.login.bind(this);
-    this.logout = this.logout.bind(this);
     this.setRadius = this.setRadius.bind(this);
   }
+  //Set the current chat radius
   setRadius(rad) {
     this.setState({ radius: rad });
   }
-  login() {
-    this.setState({ loggedIn: true });
-  }
-  logout() {
-    this.setState({ loggedIn: false });
-  }
+
   render() {
     return (
       <BrowserRouter>

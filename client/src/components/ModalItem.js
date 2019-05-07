@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+//Reactstrap components
 import {
   Modal,
   ModalHeader,
@@ -15,24 +16,29 @@ class ModalItem extends Component {
     super(props);
 
     this.state = {
+      //Determines if modals are opened or closed
       modal: false,
-      roomName: "",
-      radius: 1
+      //Name of room or user (depending on particular modal)
+      name: ""
     };
     this.modalToggle = this.modalToggle.bind(this);
     this.handleClick = this.handleClick.bind(this);
     this.handleChange = this.handleChange.bind(this);
   }
+  //Submits user or room name
   handleClick(event) {
     event.preventDefault();
-    this.props.handleClick(this.state.roomName);
-    this.setState({ roomName: "" });
+    this.props.handleClick(this.state.name);
+    this.setState({ name: "" });
     this.modalToggle();
   }
+  //Sets radius when chat radius is changed
   handleChange(event) {
     this.props.setRadius(event.target.value);
   }
+  //Toggles modal open or closed
   modalToggle() {
+    //If on small screen with hamburger menu, collapse menu upon closing modal
     if (this.state.modal && typeof this.props.toggleNavbar !== "undefined") {
       this.props.toggleNavbar();
     }
@@ -70,8 +76,8 @@ class ModalItem extends Component {
                   </div>
                 ) : (
                   <Input
-                    value={this.state.roomName}
-                    onChange={e => this.setState({ roomName: e.target.value })}
+                    value={this.state.name}
+                    onChange={e => this.setState({ name: e.target.value })}
                   />
                 )}
                 {this.props.isRange ? (

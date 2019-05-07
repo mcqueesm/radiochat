@@ -6,27 +6,30 @@ class Register extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      //Fields corresponding to form inputs
       first: "",
       last: "",
       email: "",
       password: "",
-      token: "",
+      //True if errors upon submit
       error: false,
+      //Error messages from improper submit
       errorMsg: []
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
-
+  //Updates state corresponding to input fields
   handleChange(e) {
     this.setState({
       [e.target.name]: e.target.value
     });
   }
-
+  //Post registration form upon submit
   handleSubmit(e) {
     e.preventDefault();
     const { first, last, email, password } = this.state;
+    //set header
     const config = {
       headers: {
         "Content-Type": "application/json"
@@ -35,7 +38,7 @@ class Register extends Component {
 
     // Request body
     const body = JSON.stringify({ first, last, email, password });
-
+    //Post registration form
     axios
       .post("/api/register", body, config)
       .then(res => {

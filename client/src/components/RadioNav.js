@@ -36,7 +36,7 @@ class InnerNav extends Component {
     this.props.setRadius(rad);
     this.props.socket.emit("update_radius", rad);
   }
-
+  //Logout user
   logout() {
     axios.get("/api/logout", { withCredentials: true });
     this.props.history.push("/login");
