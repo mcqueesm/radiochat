@@ -5,7 +5,6 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 var mongoose = require("mongoose");
 var apiRouter = require("./routes/api");
-var config = require("config");
 
 var app = express();
 var socket_io = require("socket.io");
@@ -17,7 +16,7 @@ app.io = io;
 require("./socketBase.js")(io);
 
 //mongooseURI
-var db = config.get("mongoURI");
+var db = process.env.MONGODB_URI;
 // Connect to mongoose
 mongoose
   .connect(

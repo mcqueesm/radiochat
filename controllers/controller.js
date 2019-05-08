@@ -4,7 +4,6 @@ const User = require("../models/User");
 const { check, validationResult } = require("express-validator/check");
 const { sanitizeBody } = require("express-validator/filter");
 var jwt = require("jsonwebtoken");
-var config = require("config");
 
 //Use express-validator to find errors on registration form
 exports.check_errors = [
@@ -60,7 +59,7 @@ exports.register_user = function(req, res, next) {
         newUser.save().then(user => {
           jwt.sign(
             { id: user.id },
-            config.get("jwtSecret"),
+            process.env.JWT_SECRET,
             { expiresIn: 86400 },
             (err, token) => {
               res.json({
@@ -101,7 +100,7 @@ exports.authorize_user = function(req, res, next) {
 
       jwt.sign(
         { id: user.id },
-        config.get("jwtSecret"),
+        process.env.JWT_SECRET,
         { expiresIn: 86400 },
         (err, token) => {
           res.cookie("token", token, { httpOnly: true }).sendStatus(200);
@@ -121,7 +120,7 @@ exports.withAuth = function(req, res, next) {
   if (!token) {
     res.status(401).send("Unauthorized: No token provided");
   } else {
-    jwt.verify(token, config.get("jwtSecret"), function(err, decoded) {
+    jwt.verify(token, process.env.JWT_SECRET, function(err, decoded) {
       if (err) {
         res.status(401).send("Unauthorized: Invalid token");
       } else {
